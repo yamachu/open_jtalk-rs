@@ -91,6 +91,7 @@ fn generate_bindings(
     let mut bind_builder = bindgen::Builder::default()
         .header("wrapper.hpp")
         .allowlist_recursively(true)
+        .allowlist_function(".*")
         .clang_args(clang_args)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .size_t_is_usize(true)
