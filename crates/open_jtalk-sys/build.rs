@@ -104,6 +104,7 @@ fn generate_bindings(
         bind_builder =
             bind_builder.allowlist_file(format!(".*{}", file_name.replace(".h", "\\.h")));
     }
+    bind_builder = bind_builder.allowlist_file(".*(mecab|njd|jpcommon|text2mecab).*\\.h");
 
     let bindings = bind_builder
         .generate()
