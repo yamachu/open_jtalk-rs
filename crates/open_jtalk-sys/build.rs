@@ -113,6 +113,8 @@ fn generate_bindings(
         .join(env::var("CARGO_CFG_TARGET_OS").unwrap())
         .join(env::var("CARGO_CFG_TARGET_ARCH").unwrap())
         .join("bindings.rs");
+    std::fs::create_dir_all(generated_file.parent().unwrap())
+        .expect("failed to create the generated bindings directory");
     println!("cargo:rerun-if-changed={:?}", generated_file);
     bindings
         .write_to_file(&generated_file)
