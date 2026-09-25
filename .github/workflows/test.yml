@@ -79,7 +79,9 @@ jobs:
       # FIXME: auto_gen_bind_prにも処理があるので共通化する
       - name: Install emscripten
         if: matrix.target == 'wasm32-unknown-emscripten'
-        uses: mymindstorm/setup-emsdk@v12
+        uses: emscripten-core/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
+        with:
+          version: 4.0.8
       - name: Install cross compiler for linux aarch64
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         shell: bash
