@@ -1,8 +1,7 @@
 use std::{
-    env, fs,
-    io::BufRead,
+    env,
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Command,
     str,
 };
 
@@ -62,10 +61,6 @@ fn main() {
         }
     }
 
-    if target.contains("emscripten") {
-        include_dirs.extend(search_emscripten_include_directories());
-    }
-
     let dst_dir = cmake_conf.build();
     let lib_dir = dst_dir.join("lib");
     println!("cargo:rustc-link-search={}", lib_dir.to_str().unwrap());
@@ -87,12 +82,23 @@ fn generate_bindings(
     include_dirs: impl IntoIterator<Item = impl AsRef<Path>>,
 ) {
     let include_dir = allow_dir.as_ref();
-    let clang_args = include_dirs
+    let mut clang_args = include_dirs
         .into_iter()
         .map(|dir| format!("-I{}", dir.as_ref().to_str().unwrap()))
         .chain([format!("-I{}", include_dir.to_str().unwrap())])
-        .chain(["-fvisibility=default".to_string()])
         .collect::<Vec<_>>();
+    // emscriptenではsysrootが自動で解決されず、またデフォルトのvisibilityがhiddenで関数が出力されないため指定する
+    if env::var("TARGET").unwrap().contains("emscripten") {
+        println!("cargo:rerun-if-env-changed=EMSDK");
+        let emsdk = env::var("EMSDK").expect("EMSDK is not set. Run `source emsdk_env.sh`");
+        let sysroot = Path::new(&emsdk)
+            .join("upstream")
+            .join("emscripten")
+            .join("cache")
+            .join("sysroot");
+        clang_args.push(format!("--sysroot={}", sysroot.to_str().unwrap()));
+        clang_args.push("-fvisibility=default".to_string());
+    }
     println!("cargo:rerun-if-changed=wrapper.hpp");
     println!("cargo:rerun-if-changed=src/generated/bindings.rs");
     let mut bind_builder = bindgen::Builder::default()
@@ -125,34 +131,4 @@ fn generate_bindings(
     bindings
         .write_to_file(&generated_file)
         .expect("Couldn't write bindings!");
-}
-
-fn search_emscripten_include_directories() -> impl IntoIterator<Item = PathBuf> {
-    let empty_cpp_path = Path::new(&env::var_os("OUT_DIR").unwrap()).join("empty.cpp");
-    fs::write(&empty_cpp_path, b"").unwrap();
-
-    let mut command;
-    if cfg!(target_os = "windows") {
-        command = Command::new("cmd");
-        command.arg("/C");
-    } else {
-        command = Command::new("sh");
-        command.arg("-c");
-    };
-
-    let empp_output = command
-        .arg(format!("em++ --verbose {}", empty_cpp_path.display()))
-        .stderr(Stdio::piped())
-        .output()
-        .unwrap();
-
-    empp_output
-        .stderr
-        .lines()
-        .map(Result::unwrap)
-        .skip_while(|line| line.trim() != "#include <...> search starts here:")
-        .skip(1)
-        .take_while(|line| line.trim() != "End of search list.")
-        .map(|line| PathBuf::from(line.trim()))
-        .collect::<Vec<_>>()
 }
