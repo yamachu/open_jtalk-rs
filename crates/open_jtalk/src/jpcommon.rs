@@ -32,6 +32,9 @@ unsafe impl resources::Resource for JpCommon {
     }
 }
 
+// SAFETY: `Send`と対立する性質はないはず。
+unsafe impl Send for JpCommon {}
+
 impl<'a> Iterator for JpCommonLabelFeatureIter<'a> {
     type Item = &'a str;
     fn next(&mut self) -> Option<Self::Item> {
@@ -73,7 +76,7 @@ impl JpCommon {
         unsafe { open_jtalk_sys::njd2jpcommon(self.as_raw_ptr(), njd.as_raw_ptr()) }
     }
 
-    pub fn get_label_feature_to_iter(&self) -> Option<JpCommonLabelFeatureIter> {
+    pub fn get_label_feature_to_iter(&self) -> Option<JpCommonLabelFeatureIter<'_>> {
         self.get_label_feature_raw().map(|label_features| {
             let label_features_size = self.get_label_size();
             JpCommonLabelFeatureIter {

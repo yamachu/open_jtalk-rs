@@ -2,6 +2,7 @@
 name = "open_jtalk-sys"
 version = "0.16.111"
 edition = "2021"
+license = "BSD-3-Clause"
 
 [features]
 default = []
@@ -9,7 +10,7 @@ generate-bindings = []
 
 [build-dependencies]
 cmake = "0.1.48"
-bindgen = "0.60.1"
+bindgen = "0.72.0"
 
 [dependencies]
 link-cplusplus = "1.0.6"

@@ -99,10 +99,10 @@ fn generate_bindings(
         .header("wrapper.hpp")
         .allowlist_recursively(true)
         .clang_args(clang_args)
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .size_t_is_usize(true)
-        .rustfmt_bindings(true)
-        .rustified_enum("*");
+        .formatter(bindgen::Formatter::Prettyplease)
+        .rustified_enum(".*");
     let paths = std::fs::read_dir(include_dir).unwrap();
     for path in paths {
         let path = path.unwrap();
@@ -114,12 +114,13 @@ fn generate_bindings(
     let bindings = bind_builder
         .generate()
         .expect("Unable to generate bindings");
-    let generated_file = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
+    let generated_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
         .join("src")
         .join("generated")
         .join(env::var("CARGO_CFG_TARGET_OS").unwrap())
-        .join(env::var("CARGO_CFG_TARGET_ARCH").unwrap())
-        .join("bindings.rs");
+        .join(env::var("CARGO_CFG_TARGET_ARCH").unwrap());
+    std::fs::create_dir_all(&generated_dir).expect("Couldn't create bindings dir!");
+    let generated_file = generated_dir.join("bindings.rs");
     println!("cargo:rerun-if-changed={:?}", generated_file);
     bindings
         .write_to_file(&generated_file)
